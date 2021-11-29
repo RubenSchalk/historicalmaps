@@ -26,9 +26,11 @@ library(radix)
 
 # R Markdown
 
-This is an R Markdown presentation. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. It's a great way to combine R programming with text. 
+This is an R Markdown presentation. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. It's a great way to combine R programming with text and visualization. 
 
-This webpage will show how to integrate historical maps from the <a href="https://www.uu.nl/bijzondere-collecties-universiteitsbibliotheek-utrecht" target="_blank">Special Collections</a> of the Utrecht University Library with a research dataset, and visualize the results. 
+What is more, when combining this with an open source publication of your dataset and scripts (for instance on a dataverse, Surfdrive or github), your complete workflow is public and reproducible! The code blocks in this example are all displayed for instruction purposes, but they can be hidden as well to keep only text and code output.
+
+This demonstration will show how to integrate historical maps from the <a href="https://www.uu.nl/bijzondere-collecties-universiteitsbibliotheek-utrecht" target="_blank">Special Collections</a> of the Utrecht University Library with a research dataset, and visualize the results. 
 
 <br/>
 
@@ -74,7 +76,7 @@ This all looks fine for now, but notice that `sex` is not defined as a factor bu
 
 ## *Spatial data*
 
-Spatial data can have many different formats and many ways of getting it into R. Because we'll use an `XYZ file` of the Historical Maps collection one option is to use a package called [`leaflet`](https://rstudio.github.io/leaflet/). This is a Java-based package that allows for interactive features, such as pins, clusters, and label visualizations. 
+Spatial data can have many different formats and many ways of getting it into R. Because we'll use an `XYZ file` of the Historical Maps collection one option is to use a package called <a href="https://rstudio.github.io/leaflet/" target="_blank">leaflet</a>. This is a Java-based package that allows for interactive features, such as pins, clusters, and label visualizations. 
 
 ```{r , echo = TRUE}
 
@@ -147,7 +149,7 @@ Although the angles of polygons are a bit off compared to the map, it shows that
 
 Because our map is of the Dutch Republic, we'll plot the origin of Dutch migrants to The Hague. This can be easily done by subsetting the data using `data.table` (`adm[foreign_dummy == 0`). Next, because many migrants came from the same cities or towns (Amsterdam, Deventer, etc.) we'll define clustering to be able to visualize all migrants. The interactive map feature then allows for zooming in on the individuals from these clusters.
 
-Many social and economic historians are interested in the social status of migrants. Did only the poor move to cities? To examine that for our migrants, we'll use the HISCAM scale (<a href="https://www.tandfonline.com/doi/full/10.1080/01615440.2012.715569" target="_blank">see here</a>). This is a social stratification scheme based on occupational titles. It runs from `40` (low status, such as day-labourers), to `100` (very high status, such as lawyers and physicians). Since the occupations of migrants were already coded into HISCAM [(see above)](#from-archival-records-to-dataset), we can assign a color corresponding to their status, ranging from white (low) to red (high). This is all done in the few lines of code below. Note that you can even hover over the individual migrants to display their HISCAM score!
+Many social and economic historians are interested in the social status of migrants. Did only the poor move to cities? To examine that for our migrants, we'll use the HISCAM scale (<a href="https://www.tandfonline.com/doi/full/10.1080/01615440.2012.715569" target="_blank">see here</a>). This is a social stratification scheme based on occupational titles. It runs from `40` (low status, such as day-labourers), to `100` (very high status, such as lawyers and physicians). Since the occupations of migrants were already coded into HISCAM ([see above](#from-archival-records-to-dataset)), we can assign a color corresponding to their status, ranging from white (low) to red (high). This is all done in the few lines of code below. Note that you can even hover over the individual migrants to display their HISCAM score!
 
 ```{r , echo = TRUE}
 
@@ -246,7 +248,7 @@ That's it for now! Note that the dataset used here required quite some work, but
 
 # Want to know more?
 
-Join the R courses of <a href="https://www.uu.nl/en/research/research-data-management/training-workshops" target="_blank">RDM</a> and/or check the upcoming events of the <a href="https://www.uu.nl/universiteitsbibliotheek/advies-ondersteuning-voor/onderzoekers/digital-humanities-support/living-lab-digital-humanities" target="_blank">Living Lab Digital Humanities</a>!
+Join the R courses of <a href="https://www.uu.nl/en/research/research-data-management/training-workshops" target="_blank">RDM</a> and/or check the upcoming events at the <a href="https://www.uu.nl/universiteitsbibliotheek/advies-ondersteuning-voor/onderzoekers/digital-humanities-support/living-lab-digital-humanities" target="_blank">Living Lab Digital Humanities</a>!
 
 Questions: <r.schalk@uu.nl> 
 
