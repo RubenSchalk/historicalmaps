@@ -36,11 +36,11 @@ This webpage will show how to integrate historical maps from the <a href="https:
 
 One of my own datasets, collected together with a research assistant, documents the background of migrants entering the city of The Hague in the eighteenth century. The data was collected from digitized sources at the Gemeentearchief The Hague (<a href="https://haagsgemeentearchief.nl/components/com_maisinternet/maisi_ajax_proxy.php?mivast=59&mizig=210&miadt=59&miaet=185&micode=0350-01&minr=2670313&milang=nl&misort=last_mod%7Cdesc&miview=viewer2" target="_blank">see here</a>).
 
-Placenames were geocoded using <a href="https://github.com/cmharlow/geonames-reconcile" target="_blank">Github repository</a>.
+Placenames were geocoded against Geonames with Openrefine  using <a href="https://github.com/cmharlow/geonames-reconcile" target="_blank">this Github repository</a>.
 
-Occupations were coded into HISCO, HISCLASS, and Hiscam classifications using <a href="https://iisg.amsterdam/en/hsn/data/occupations" target="_blank">this reference dataset for Dutch occupations</a>.
+Occupations were coded into HISCO, HISCLASS, and HISCAM classifications using <a href="https://iisg.amsterdam/en/hsn/data/occupations" target="_blank">this reference dataset for Dutch occupations</a>.
 
-After many hours of entering, cleaning, and standardizing data, this is the dataset: [adm_journeymen.csv](adm_jm_dec2020.csv).
+After many hours of entering, cleaning, and standardizing data, this is the dataset: [adm_journeymen.csv (sample)](https://surfdrive.surf.nl/files/index.php/s/fsL5APQE7YXI9M1/download).
 
 <br/>
 
@@ -84,11 +84,11 @@ library(leaflet)
 
 Now we can select a map from the <a href="https://uu.georeferencer.com/maps/d6b2a310-751f-5a1e-97ae-01b9c6b28d92/" target="_blank">Utrecht University Historical Maps Collection</a>. The selected map is titled *Belgii faederati nova descriptio* and printed in Amsterdam in 1660.
 
-We'll store this map in R by simply copying the URL of the `XYZ` link from the Historical Maps website. To visualize it, we set the correct boundaries and zoom level of the map box, and then simply call the URL inside the `leaflet` package. Notice that the quality of the scanned map allows for very detailed zooming.
+We'll store this map in R by simply copying the URL of the `XYZ` link from the Historical Maps website. To visualize it, we set the correct center and zoom level of the map box, and then simply call the URL inside the `leaflet` package. Notice that the quality of the scanned map allows for very detailed zooming.
 
 ```{r , echo = TRUE}
 
-url <- ("https://maps.georeferencer.com/georeferences/9ee5f3fd-740b-5206-8e85-2ecb94618bc9/2018-03-07T13:48:38.866245Z/map/{z}/{x}/{y}.png?key=ebGMmpORFAU1M65ypiIz") # store the link in R
+url <- ("https://maps.georeferencer.com/georeferences/9ee5f3fd-740b-5206-8e85-2ecb94618bc9/2018-03-07T13:48:38.866245Z/map/{z}/{x}/{y}.png?key=ebGMmpORFAU1M65ypiIz") # store the URL from the website in R
 
 leaflet() %>% setView(lng = 5.092092, lat = 52.093992, zoom = 7) %>%
   addTiles(url,
@@ -101,7 +101,7 @@ leaflet() %>% setView(lng = 5.092092, lat = 52.093992, zoom = 7) %>%
 
 ## *Polygons*
 
-Because our map is  *georeferenced* it comes with underlying coordinates, meaning that we can add georeferenced data to it. First, we will examine how historically correct the provincial borders of this map actually are. This can be done by importing a recent dataset from the IISH in Amsterdam. Researchers from the IISH are currently meticulously re-drawing provincial borders and publishing these as machine-readable files (`GeoJSON`). More information on this project <a href="https://iisg.amsterdam/nl/data/datawebsites/coin-produciton-in-the-low-countries" target="_blank">here</a>.
+Because our map is <a href="https://uu.georeferencer.com/maps/d6b2a310-751f-5a1e-97ae-01b9c6b28d92/view" target="_blank">georeferenced</a> it comes with underlying coordinates, meaning that we can add georeferenced data to it. First, we will examine how historically correct the provincial borders of this map actually are. This can be done by importing a recent dataset from the IISH in Amsterdam. Researchers from the IISH are currently meticulously re-drawing provincial borders and publishing these as machine-readable files (`GeoJSON`). More information on this project <a href="https://iisg.amsterdam/nl/data/datawebsites/coin-produciton-in-the-low-countries" target="_blank">here</a>.
 
 The borders are published as polygons. These are basically  two-dimensional geometric figures that, in this case, follow the borders of historical regions of mint authorities. The files are not maps in itself but shapes, with accompanying metadata, that you can add to a map. We will do that below.
 
@@ -145,9 +145,9 @@ Although the angles of polygons are a bit off compared to the map, it shows that
 
 # Plotting the dataset on the historical map
 
-Because our map is of the Dutch Republic, we'll plot the origin of Dutch migrants to The Hague. This can be easily done by subsetting the data using `data.table` (`adm[foreign_dummy == 0`). Next, because many migrants came from the same cities or towns (Amsterdam, Deventer, etc.) we'll use a clustering method to visualize all migrants. The interactive map feature then allows for zooming in on the individuals from these clusters.
+Because our map is of the Dutch Republic, we'll plot the origin of Dutch migrants to The Hague. This can be easily done by subsetting the data using `data.table` (`adm[foreign_dummy == 0`). Next, because many migrants came from the same cities or towns (Amsterdam, Deventer, etc.) we'll define clustering to be able to visualize all migrants. The interactive map feature then allows for zooming in on the individuals from these clusters.
 
-Many social and economic historians are interested in the social status of migrants. Did only the poor move to cities? To examine that for our migrants, we'll use the Hiscam scale (<a href="https://www.tandfonline.com/doi/full/10.1080/01615440.2012.715569" target="_blank">see here</a>). This is a social stratification scheme based on occupational titles. It runs from `40` (low status, such as day-labourers), to `100` (very high status, such as lawyers and physicians). Since the occupations of migrants are already coded this way, we can assign a color corresponding to their status, ranging from white (low) to red (high). This is all done in the few lines of code below. Note that you can even hover over the individual migrants to display their Hiscam score!
+Many social and economic historians are interested in the social status of migrants. Did only the poor move to cities? To examine that for our migrants, we'll use the HISCAM scale (<a href="https://www.tandfonline.com/doi/full/10.1080/01615440.2012.715569" target="_blank">see here</a>). This is a social stratification scheme based on occupational titles. It runs from `40` (low status, such as day-labourers), to `100` (very high status, such as lawyers and physicians). Since the occupations of migrants were already coded into HISCAM [(see above)](#from-archival-records-to-dataset), we can assign a color corresponding to their status, ranging from white (low) to red (high). This is all done in the few lines of code below. Note that you can even hover over the individual migrants to display their HISCAM score!
 
 ```{r , echo = TRUE}
 
@@ -192,17 +192,33 @@ leaflet(data = adm[foreign_dummy == 0]) %>% setView(lng = 5.092092, lat = 52.093
 
 ```
 
+We can also subset the data on a specific occupation. Let's see where construction workers came from, and use a <a href="https://uu.georeferencer.com/maps/dcfa7b3b-b547-5c70-acb6-29c7e75ea0ef/" target="_blank">map</a> that covers more ground:
+
+```{r , echo = TRUE}
+
+
+leaflet(data = adm[hisco_minor == 95]) %>% setView(lng = 8.75439, lat = 51.71905, zoom = 6) %>%
+  addTiles("https://maps.georeferencer.com/georeferences/95c69e4c-410e-56e5-921e-bc5ef59f5be9/2019-11-15T12:39:45.001798Z/map/{z}/{x}/{y}.png?key=ebGMmpORFAU1M65ypiIz",
+           options = WMSTileOptions(format = "image/png", transparent = F)) %>%
+  addMarkers(lat = ~pob_lat, lng = ~pob_long,
+                    label = ~as.character(adm$occupation[adm$hisco_minor == 95]),
+                    clusterOptions = markerClusterOptions()  )
+
+```
+
+*Answer*: most came from the surroundings of The Hague. 
+
 <br/>
 
 # Combining functions
 
-A very strong feature of R is that you can combine functions from different packages. Let's demonstrate this by combining *three* variables in our map: occupational category (Hisco), occupational title, and the Hiscam score. First, we set a color scheme for the occupational categories using another package (`viridis`). Next, we combine the occupational title and the Hiscam score of the migrant into one text label, using the function `paste0`. Interesting to note here is that `paste0` is a base R function, that you can use across packages. This goes for many common conditions, which means that you don't always have to learn the specific code of every package. Instead you can just use base R functions. The map below combines four different methods for visualization: `base R`, `data.table`, `leaflet`, and `viridis`:
+A very strong feature of R is that you can combine functions from different packages. Let's demonstrate this by combining *three* variables in our map: occupational category (HISCO minor), occupational title, and the HISCAM score. First, we set a color scheme for the occupational categories using another package (`viridis`). Next, we combine the occupational title and the Hiscam score of the migrant into one text label, using the function `paste0`. Interesting to note here is that `paste0` is a base R function, that you can use across packages. This goes for many common conditions, which means that you don't always have to learn the specific code or functions of every package. The map below combines four different methods for visualization: `base R`, `data.table`, `leaflet`, and `viridis`:
 
 <br/>
 
 | package    | used for           | code                                                           | 
 |:-----------|:-------------------|:---------------------------------------------------------------|
-| base R     | pasting labels     | `paste0(adm$occupation, ", Hiscam = ", adm$hiscam)`            |   
+| base R     | pasting labels     | `paste0(adm$occupation, ", HISCAM = ", adm$hiscam)`            |   
 | data.table | subsetting dataset | `adm[foreign_dummy == 0]`                                      |   
 | viridis    | color scale        | `qpal2 <- colorNumeric("viridis", as.factor(adm$hisco_minor))` |   
 | leaflet    | interactive map    | all the other lines ;)                                         |   
@@ -212,17 +228,19 @@ A very strong feature of R is that you can combine functions from different pack
 ```{r echo = TRUE}
 
 library(viridis)
-qpal2 <- colorFactor("viridis", as.factor(adm$hisco_minor)) # 
+qpal2 <- colorFactor("viridis", as.factor(adm$hisco_minor)) # define color scheme for occupational categories
 
 leaflet(data = adm[foreign_dummy == 0]) %>% setView(lng = 5.092092, lat = 52.093992, zoom = 7) %>%
   addTiles(url,
            options = WMSTileOptions(format = "image/png", transparent = F)) %>%
   addCircleMarkers(lat = ~pob_lat, lng = ~pob_long,
-                   color = ~qpal2(adm$hisco_minor), label = ~as.character(paste0(adm$occupation, ", Hiscam = ", adm$hiscam )),
+                   color = ~qpal2(adm$hisco_minor), label = ~as.character(paste0(adm$occupation, ", HISCAM = ", adm$hiscam )),
                    clusterOptions = markerClusterOptions()
   )
 
 ```
+
+That's it for now! Note that the dataset used here required quite some work, but as long as you have coordinates (latitude and longitude), or even just place names, you can already perform GIS visualizations. 
 
 <br/>
 
@@ -230,7 +248,7 @@ leaflet(data = adm[foreign_dummy == 0]) %>% setView(lng = 5.092092, lat = 52.093
 
 Join the R courses of <a href="https://www.uu.nl/en/research/research-data-management/training-workshops" target="_blank">RDM</a> and/or check the upcoming events of the <a href="https://www.uu.nl/universiteitsbibliotheek/advies-ondersteuning-voor/onderzoekers/digital-humanities-support/living-lab-digital-humanities" target="_blank">Living Lab Digital Humanities</a>!
 
-Questions: email <r.schalk@uu.nl> 
+Questions: <r.schalk@uu.nl> 
 
 <br/><br/>
 
