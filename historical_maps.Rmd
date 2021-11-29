@@ -1,0 +1,236 @@
+---
+title: "Historical Interactive Maps"
+author:
+  - name: "[Ruben Schalk](https://www.uu.nl/medewerkers/RSchalk)"
+    affiliation: "Utrecht University Library"
+    url: "https://www.uu.nl/medewerkers/RSchalk"
+date: "`r format(Sys.time())`"
+output: 
+  html_document: 
+    number_sections: yes
+---
+
+<style type="text/css">
+  body{
+  font-size: 14pt;
+text-align: justify}
+</style>
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(radix)
+
+
+```
+
+# R Markdown
+
+This is an R Markdown presentation. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. It's a great way to combine R programming with text. 
+
+This webpage will show how to integrate historical maps from the <a href="https://www.uu.nl/bijzondere-collecties-universiteitsbibliotheek-utrecht" target="_blank">Special Collections</a> of the Utrecht University Library with a research dataset, and visualize the results. 
+
+<br/>
+
+# From archival records to dataset
+
+One of my own datasets, collected together with a research assistant, documents the background of migrants entering the city of The Hague in the eighteenth century. The data was collected from digitized sources at the Gemeentearchief The Hague (<a href="https://haagsgemeentearchief.nl/components/com_maisinternet/maisi_ajax_proxy.php?mivast=59&mizig=210&miadt=59&miaet=185&micode=0350-01&minr=2670313&milang=nl&misort=last_mod%7Cdesc&miview=viewer2" target="_blank">see here</a>).
+
+Placenames were geocoded using <a href="https://github.com/cmharlow/geonames-reconcile" target="_blank">Github repository</a>.
+
+Occupations were coded into HISCO, HISCLASS, and Hiscam classifications using <a href="https://iisg.amsterdam/en/hsn/data/occupations" target="_blank">this reference dataset for Dutch occupations</a>.
+
+After many hours of entering, cleaning, and standardizing data, this is the dataset: [adm_journeymen.csv](adm_jm_dec2020.csv).
+
+<br/>
+
+# Importing data in R
+
+## *Tabular data*
+
+You may know that R is an open-source community-based platform that heavily relies on its users and enthusiastic programmers. R comes with basic functionalities (called "base R"). You can add functionalities to R by installing `packages`, that are developed by the community. There are many, many, many different packages. This also means that there are multiple ways to solve the same issue in R. This is a strong feature of R but can also be overwhelming. Also, not every package is as good or useful as the other. Most of the time, just a couple of packages will suit most of your needs. 
+
+Getting our Excel or csv file into R requires reading it as a `data.frame`. First we import the data and then take a look at the first three rows to see if it looks as it should. For this we use a package that is awesome for manipulating tabular data: [`data.table`](https://cran.r-project.org/web/packages/data.table/vignettes/datatable-intro.html).
+
+```{r , echo = TRUE}
+library(data.table)
+
+adm <- fread("C:\\Users\\Schal107\\Documents\\UBU\\Team DH\\adm_jm_dec2020.csv") # import the csv file
+
+head(adm, n=3) # display the first x rows of the dataset
+
+```
+
+Next, we check if the relevant variables are in the right format. Coordinates should be numeric otherwise we cannot plot them on a map:
+
+```{r , echo = TRUE}
+
+str(adm[!is.na(origin_lat), list(pob_modern, pob_lat, pob_long, origin, origin_lat, origin_long, sex)])
+
+```
+
+This all looks fine for now, but notice that `sex` is not defined as a factor but a string. This is something we might want to fix when doing other visualizations or analyses with this variable.
+
+
+## *Spatial data*
+
+Spatial data can have many different formats and many ways of getting it into R. Because we'll use an `XYZ file` of the Historical Maps collection one option is to use a package called [`leaflet`](https://rstudio.github.io/leaflet/). This is a Java-based package that allows for interactive features, such as pins, clusters, and label visualizations. 
+
+```{r , echo = TRUE}
+
+library(leaflet)
+
+```
+
+Now we can select a map from the <a href="https://uu.georeferencer.com/maps/d6b2a310-751f-5a1e-97ae-01b9c6b28d92/" target="_blank">Utrecht University Historical Maps Collection</a>. The selected map is titled *Belgii faederati nova descriptio* and printed in Amsterdam in 1660.
+
+We'll store this map in R by simply copying the URL of the `XYZ` link from the Historical Maps website. To visualize it, we set the correct boundaries and zoom level of the map box, and then simply call the URL inside the `leaflet` package. Notice that the quality of the scanned map allows for very detailed zooming.
+
+```{r , echo = TRUE}
+
+url <- ("https://maps.georeferencer.com/georeferences/9ee5f3fd-740b-5206-8e85-2ecb94618bc9/2018-03-07T13:48:38.866245Z/map/{z}/{x}/{y}.png?key=ebGMmpORFAU1M65ypiIz") # store the link in R
+
+leaflet() %>% setView(lng = 5.092092, lat = 52.093992, zoom = 7) %>%
+  addTiles(url,
+           options = WMSTileOptions(format = "image/png", transparent = F)
+  ) # plot the map
+
+```
+
+<br/>
+
+## *Polygons*
+
+Because our map is  *georeferenced* it comes with underlying coordinates, meaning that we can add georeferenced data to it. First, we will examine how historically correct the provincial borders of this map actually are. This can be done by importing a recent dataset from the IISH in Amsterdam. Researchers from the IISH are currently meticulously re-drawing provincial borders and publishing these as machine-readable files (`GeoJSON`). More information on this project <a href="https://iisg.amsterdam/nl/data/datawebsites/coin-produciton-in-the-low-countries" target="_blank">here</a>.
+
+The borders are published as polygons. These are basically  two-dimensional geometric figures that, in this case, follow the borders of historical regions of mint authorities. The files are not maps in itself but shapes, with accompanying metadata, that you can add to a map. We will do that below.
+
+```{r , echo = TRUE}
+
+library(geojsonio)
+
+mint <- geojson_read("C:\\Users\\Schal107\\Documents\\UBU\\Team DH\\Mint authorities.geojson", what = "s") # import IISH polygons
+
+factpal <- colorFactor(topo.colors(10), mint$AUTHORITY) # define a color scheme for our polygons
+
+leaflet() %>% setView(lng = 5.092092, lat = 52.093992, zoom = 7) %>%
+  addTiles(url,
+           options = WMSTileOptions(format = "image/png", transparent = F)
+  )%>% 
+  addPolygons(data = mint[mint$DATEfrom >= "1520-01-01" & mint$DATEto <= "1794-12-31" &
+                            !grepl("Flanders", mint$AUTHORITY)  &
+                            mint$AUTHORITY != "Mechelen" &
+                            mint$AUTHORITY != "Tournai" &
+                            mint$AUTHORITY != "Brabant" &
+                            mint$AUTHORITY != "Namur" &
+                            mint$AUTHORITY != "Hainaut" &
+                            mint$AUTHORITY != "United Belgian States" &
+                            mint$AUTHORITY != "Liège"  |
+                            mint$AUTHORITY == "Culemborg" |
+                            mint$AUTHORITY == "Vianen" |
+                            mint$AUTHORITY == "Ravenstein" |
+                            mint$AUTHORITY == "Buren" |
+                            mint$AUTHORITY == "Batenburg" |
+                            mint$AUTHORITY == "Cuijk" |
+                            mint$AUTHORITY == "Gemert" |
+                            mint$AUTHORITY == "Borculo" |
+                            mint$AUTHORITY == "Cleves"
+                          ,    ], color = ~factpal(mint$AUTHORITY), fillOpacity = .01) # this long list of subsetting is required to only retrieve the borders of regions within the Dutch Republic
+
+```
+
+Although the angles of polygons are a bit off compared to the map, it shows that the map and the official borders follow each other extremely closely.
+
+<br/>
+
+# Plotting the dataset on the historical map
+
+Because our map is of the Dutch Republic, we'll plot the origin of Dutch migrants to The Hague. This can be easily done by subsetting the data using `data.table` (`adm[foreign_dummy == 0`). Next, because many migrants came from the same cities or towns (Amsterdam, Deventer, etc.) we'll use a clustering method to visualize all migrants. The interactive map feature then allows for zooming in on the individuals from these clusters.
+
+Many social and economic historians are interested in the social status of migrants. Did only the poor move to cities? To examine that for our migrants, we'll use the Hiscam scale (<a href="https://www.tandfonline.com/doi/full/10.1080/01615440.2012.715569" target="_blank">see here</a>). This is a social stratification scheme based on occupational titles. It runs from `40` (low status, such as day-labourers), to `100` (very high status, such as lawyers and physicians). Since the occupations of migrants are already coded this way, we can assign a color corresponding to their status, ranging from white (low) to red (high). This is all done in the few lines of code below. Note that you can even hover over the individual migrants to display their Hiscam score!
+
+```{r , echo = TRUE}
+
+qpal <- colorQuantile("Reds", adm$hiscam, n = 6) # define Hiscam color scale
+
+leaflet(data = adm[foreign_dummy == 0]) %>% setView(lng = 5.092092, lat = 52.093992, zoom = 7) %>%
+  addTiles(url,
+           options = WMSTileOptions(format = "image/png", transparent = F)) %>%
+  addCircleMarkers(lat = ~pob_lat, lng = ~pob_long,
+                   color = ~qpal(adm$hiscam), label =  ~as.character(adm$hiscam),
+                    clusterOptions = markerClusterOptions()
+  ) %>% 
+  addPolygons(data = mint[mint$DATEfrom >= "1520-01-01" & mint$DATEto <= "1794-12-31" &
+                            !grepl("Flanders", mint$AUTHORITY)  &
+                            mint$AUTHORITY != "Mechelen" &
+                            mint$AUTHORITY != "Tournai" &
+                            mint$AUTHORITY != "Brabant" &
+                            mint$AUTHORITY != "Namur" &
+                            mint$AUTHORITY != "Hainaut" &
+                            mint$AUTHORITY != "United Belgian States" &
+                            mint$AUTHORITY != "Liège"  |
+                            mint$AUTHORITY == "Culemborg" |
+                            mint$AUTHORITY == "Vianen" |
+                            mint$AUTHORITY == "Ravenstein" |
+                            mint$AUTHORITY == "Buren" |
+                            mint$AUTHORITY == "Batenburg" |
+                            mint$AUTHORITY == "Cuijk" |
+                            mint$AUTHORITY == "Gemert" |
+                            mint$AUTHORITY == "Borculo" |
+                            mint$AUTHORITY == "Cleves"
+                          ,    ], color = ~factpal(mint$AUTHORITY), fillOpacity = .01)
+
+```
+
+You might perhaps be more interested in their actual occupation, or some other variable (like their age). We can plot that as well:
+
+```{r echo=TRUE}
+leaflet(data = adm[foreign_dummy == 0]) %>% setView(lng = 5.092092, lat = 52.093992, zoom = 7) %>%
+  addTiles(url,
+           options = WMSTileOptions(format = "image/png", transparent = F)) %>%
+  addMarkers(~pob_long, ~pob_lat, label = ~as.character(adm$occupation), clusterOptions = markerClusterOptions())
+
+```
+
+<br/>
+
+# Combining functions
+
+A very strong feature of R is that you can combine functions from different packages. Let's demonstrate this by combining *three* variables in our map: occupational category (Hisco), occupational title, and the Hiscam score. First, we set a color scheme for the occupational categories using another package (`viridis`). Next, we combine the occupational title and the Hiscam score of the migrant into one text label, using the function `paste0`. Interesting to note here is that `paste0` is a base R function, that you can use across packages. This goes for many common conditions, which means that you don't always have to learn the specific code of every package. Instead you can just use base R functions. The map below combines four different methods for visualization: `base R`, `data.table`, `leaflet`, and `viridis`:
+
+<br/>
+
+| package    | used for           | code                                                           | 
+|:-----------|:-------------------|:---------------------------------------------------------------|
+| base R     | pasting labels     | `paste0(adm$occupation, ", Hiscam = ", adm$hiscam)`            |   
+| data.table | subsetting dataset | `adm[foreign_dummy == 0]`                                      |   
+| viridis    | color scale        | `qpal2 <- colorNumeric("viridis", as.factor(adm$hisco_minor))` |   
+| leaflet    | interactive map    | all the other lines ;)                                         |   
+
+<br/>
+
+```{r echo = TRUE}
+
+library(viridis)
+qpal2 <- colorFactor("viridis", as.factor(adm$hisco_minor)) # 
+
+leaflet(data = adm[foreign_dummy == 0]) %>% setView(lng = 5.092092, lat = 52.093992, zoom = 7) %>%
+  addTiles(url,
+           options = WMSTileOptions(format = "image/png", transparent = F)) %>%
+  addCircleMarkers(lat = ~pob_lat, lng = ~pob_long,
+                   color = ~qpal2(adm$hisco_minor), label = ~as.character(paste0(adm$occupation, ", Hiscam = ", adm$hiscam )),
+                   clusterOptions = markerClusterOptions()
+  )
+
+```
+
+<br/>
+
+# Want to know more?
+
+Join the R courses of <a href="https://www.uu.nl/en/research/research-data-management/training-workshops" target="_blank">RDM</a> and/or check the upcoming events of the <a href="https://www.uu.nl/universiteitsbibliotheek/advies-ondersteuning-voor/onderzoekers/digital-humanities-support/living-lab-digital-humanities" target="_blank">Living Lab Digital Humanities</a>!
+
+Questions: email <r.schalk@uu.nl> 
+
+<br/><br/>
+
